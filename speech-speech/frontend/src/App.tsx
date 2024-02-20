@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { TbMicrophone2, TbPlayerPlay, TbPlayerStop } from "react-icons/tb";
+import {
+  TbBrandOpenai,
+  TbMicrophone2,
+  TbPlayerPlay,
+  TbPlayerStop,
+} from "react-icons/tb";
 import "./App.css";
 
 function Header() {
@@ -13,8 +18,12 @@ function Header() {
 }
 
 let audioBlobs = [];
-let streamBeingCaptured = null;
-let mediaRecorder = null;
+let streamBeingCaptured: MediaStream | null = null;
+let mediaRecorder: MediaRecorder | null = null;
+let chat: Array<Object> = [{
+  role: "system",
+  content: "You are a helpful assistant.",
+}];
 
 function get_mic() {
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -26,6 +35,7 @@ function get_mic() {
 }
 
 function startRecord() {
+  audioBlobs = []
   get_mic().then((stream) => {
     streamBeingCaptured = stream;
     mediaRecorder = new MediaRecorder(stream);
@@ -33,7 +43,7 @@ function startRecord() {
     mediaRecorder.addEventListener("dataavailable", (event) => {
       audioBlobs.push(event.data);
     });
-    mediaRecorder.start()
+    mediaRecorder.start();
   });
 }
 
@@ -74,6 +84,33 @@ function Controls() {
       setRecordState(false);
     }
   }
+
+  function sendAudio() {
+    var formData = new FormData();
+    formData.append("audio", new Blob(audioBlobs, { type: "audio/webm" }));
+    fetch("http://100.82.51.22:8001/get-text", {
+      "method": "POST",
+      "body": formData,
+    }).then((res) => res.json())
+      .then((res) => {
+        console.log(res);
+        chat.push({ role: "user", content: res["user-transcript"] });
+        console.log(chat);
+        send_msg();
+      });
+  }
+
+  function send_msg() {
+    fetch("http://100.82.51.22:8001/conversation", {
+      "method": "POST",
+      "body": JSON.stringify(chat),
+    }).then((res) => res.json())
+      .then((res) => {
+        chat.push(res)
+        console.log(res);
+      });
+  }
+
   return (
     <div className="controls self-center flex justify-evenly p-5 text-5xl border-2 border-b-0 w-1/2 max-w-screen-sm min-w-fit">
       <button
@@ -89,6 +126,15 @@ function Controls() {
         className="inline-flex text-green-500"
       >
         <TbPlayerPlay /> PLAY
+      </button>
+
+      <button
+        onClick={() => {
+          sendAudio();
+        }}
+        className="inline-flex"
+      >
+        <TbBrandOpenai /> SEND
       </button>
     </div>
   );
