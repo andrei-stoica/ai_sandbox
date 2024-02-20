@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   TbBrandOpenai,
   TbMicrophone2,
@@ -7,10 +7,15 @@ import {
 } from "react-icons/tb";
 import "./App.css";
 
+type ChatMsg = {
+  role: string;
+  content: string;
+};
+
 function Header() {
   return (
     <header className="header p-3">
-      <div className="title text-3xl font-extrabold">
+      <div className="title text-5xl font-extrabold">
         Speach to Speech AI example
       </div>
     </header>
@@ -20,7 +25,7 @@ function Header() {
 let audioBlobs = [];
 let streamBeingCaptured: MediaStream | null = null;
 let mediaRecorder: MediaRecorder | null = null;
-let chat: Array<Object> = [{
+let chat: Array<ChatMsg> = [{
   role: "system",
   content: "You are a helpful assistant.",
 }];
@@ -35,7 +40,7 @@ function get_mic() {
 }
 
 function startRecord() {
-  audioBlobs = []
+  audioBlobs = [];
   get_mic().then((stream) => {
     streamBeingCaptured = stream;
     mediaRecorder = new MediaRecorder(stream);
@@ -64,15 +69,45 @@ function playRecord() {
   audio.play();
 }
 
-function Feed() {
+function Feed(props: { chat: Array[ChatMsg]; setChatStateFn: any }) {
+  const bottomRef = useRef(null);
+
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+    console.log("scroll?");
+  });
+
   return (
-    <div className="feed grow self-center content-center w-5/6 max-w-screen-lg px-6 py-3">
-      chat history goes here
+    <div className="feed grow self-center w-5/6 max-w-screen-lg px-6 py-3 overflow-scroll">
+      <div className="content-center  space-y-2 divide-y-4">
+        {props.chat.filter((m: ChatMsg) => m.role != "system").map((
+          m: ChatMsg,
+        ) => <Msg msg={m} />)}
+      </div>
+      <div ref={bottomRef} />
     </div>
   );
 }
 
-function Controls() {
+function Msg(props: { msg: ChatMsg }) {
+  return (
+    <div className="Messege text-lg">
+      <span className="font-bold">
+        {props.msg.role.toUpperCase()}:
+      </span>
+      <br />
+      <span className="ml-8">
+        {props.msg.content}
+      </span>
+    </div>
+  );
+}
+
+function Controls(props: { setChatStateFn: any; chat: Array[ChatMsg] }) {
   const [recordState, setRecordState] = useState(false);
 
   function toggleRecord() {
@@ -94,20 +129,20 @@ function Controls() {
     }).then((res) => res.json())
       .then((res) => {
         console.log(res);
-        chat.push({ role: "user", content: res["user-transcript"] });
-        console.log(chat);
-        send_msg();
-      });
-  }
-
-  function send_msg() {
-    fetch("http://100.82.51.22:8001/conversation", {
-      "method": "POST",
-      "body": JSON.stringify(chat),
-    }).then((res) => res.json())
-      .then((res) => {
-        chat.push(res)
-        console.log(res);
+        props.setChatStateFn((curState) => [
+          ...curState,
+          { "role": "user", "content": res["user-transcript"] },
+        ]);
+        fetch("http://100.82.51.22:8001/conversation", {
+          "method": "POST",
+          "body": JSON.stringify([...props.chat, {
+            "role": "user",
+            "content": res["user-transcript"],
+          }]),
+        }).then((res) => res.json())
+          .then((res) => {
+            props.setChatStateFn((curState) => [...curState, res]);
+          });
       });
   }
 
@@ -141,6 +176,11 @@ function Controls() {
 }
 
 function App() {
+  const [chatState, setChatState] = useState([{
+    role: "system",
+    content: "You are a helpful assistant.",
+  }]);
+
   return (
     <>
       <div className="h-screen center flex flex-col">
@@ -148,8 +188,8 @@ function App() {
           <Header />
           <hr className="mx-3 border-t-4" />
         </div>
-        <Feed />
-        <Controls />
+        <Feed chat={chatState} setChatStateFn={setChatState} />
+        <Controls setChatStateFn={setChatState} chat={chatState} />
       </div>
     </>
   );

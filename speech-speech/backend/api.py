@@ -1,10 +1,6 @@
 from openai import OpenAI
 from fastapi import FastAPI, File, Response, Request
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-from json import dumps
 from pydantic import BaseModel
-import filetype
 import whisper
 
 
@@ -27,7 +23,6 @@ def get_text(response: Response, audio: bytes = File()):
     response.headers["Access-Control-Allow-Origin"] = "*"
     with open("audio", "wb") as f:
         f.write(audio)
-    print(len(audio))
     # transcript = openAI_clinet.audio.transcriptions.create(
     #    model="whisper-1",
     #    file=audio,
@@ -42,6 +37,8 @@ def get_text(response: Response, audio: bytes = File()):
 @app.post("/conversation")
 async def get_next_response(request: Request, response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
+    #role = "test"
+    #res_msg = "temp test response"
     messages = await request.json()
     res = openAI_clinet.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -49,5 +46,6 @@ async def get_next_response(request: Request, response: Response):
     )
     res_msg = res.choices[0].message.content
     role = res.choices[0].message.role
+    print(messages)
     print(res_msg)
     return {"role": role, "content": res_msg}
