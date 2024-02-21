@@ -1,5 +1,6 @@
 from openai import OpenAI
 from fastapi import FastAPI, File, Response, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import whisper
 
@@ -37,8 +38,8 @@ def get_text(response: Response, audio: bytes = File()):
 @app.post("/conversation")
 async def get_next_response(request: Request, response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
-    #role = "test"
-    #res_msg = "temp test response"
+    # role = "test"
+    # res_msg = "temp test response"
     messages = await request.json()
     res = openAI_clinet.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -49,3 +50,15 @@ async def get_next_response(request: Request, response: Response):
     print(messages)
     print(res_msg)
     return {"role": role, "content": res_msg}
+
+
+@app.post("/speak", response_class=FileResponse)
+def tts(text: str, response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    res = openAI_clinet.audio.speech.create(
+        model="tts-1",
+        voice="nova",
+        input=text,
+    )
+    res.stream_to_file("tts.mp3")
+    return "tts.mp3"
