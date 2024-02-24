@@ -1,5 +1,6 @@
 from openai import OpenAI
 from fastapi import FastAPI, File, Response, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import whisper
@@ -8,6 +9,13 @@ import whisper
 app = FastAPI()
 openAI_clinet = OpenAI()
 model = whisper.load_model("base")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class ConversationMessege(BaseModel):
@@ -21,7 +29,6 @@ class Conversation(BaseModel):
 
 @app.post("/get-text")
 def get_text(response: Response, audio: bytes = File()):
-    response.headers["Access-Control-Allow-Origin"] = "*"
     with open("audio", "wb") as f:
         f.write(audio)
     # transcript = openAI_clinet.audio.transcriptions.create(
@@ -37,7 +44,6 @@ def get_text(response: Response, audio: bytes = File()):
 
 @app.post("/conversation")
 async def get_next_response(request: Request, response: Response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
     # role = "test"
     # res_msg = "temp test response"
     messages = await request.json()
@@ -54,11 +60,11 @@ async def get_next_response(request: Request, response: Response):
 
 @app.post("/speak", response_class=FileResponse)
 def tts(text: str, response: Response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
     res = openAI_clinet.audio.speech.create(
         model="tts-1",
         voice="nova",
         input=text,
     )
+    # this works for now but I need to find a way to stream this to response
     res.stream_to_file("tts.mp3")
     return "tts.mp3"
