@@ -12,23 +12,10 @@ type ChatMsg = {
   content: string;
 };
 
-function Header() {
-  return (
-    <header className="header p-3">
-      <div className="title text-5xl font-extrabold">
-        Speach to Speech AI example
-      </div>
-    </header>
-  );
-}
-
 let audioBlobs = [];
 let streamBeingCaptured: MediaStream | null = null;
 let mediaRecorder: MediaRecorder | null = null;
-let chat: Array<ChatMsg> = [{
-  role: "system",
-  content: "You are a helpful assistant.",
-}];
+
 
 function get_mic() {
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -65,8 +52,24 @@ function stopRecord() {
 function playRecord() {
   const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
   const audioUrl = URL.createObjectURL(audioBlob);
-  const audio = new Audio(audioUrl);
+  const audio =  new Audio(audioUrl);
   audio.play();
+}
+
+function playMsg(msg: ChatMsg) {
+  const audio = new Audio("http://100.82.51.22:8001/speak?" + new URLSearchParams({text: msg.content}));
+  console.log("loading audio and playing?")
+  audio.play();
+}
+
+function Header() {
+  return (
+    <header className="header p-3">
+      <div className="title text-5xl font-extrabold">
+        Speach to Speech AI example
+      </div>
+    </header>
+  );
 }
 
 function Feed(props: { chat: Array[ChatMsg]; setChatStateFn: any }) {
@@ -86,7 +89,8 @@ function Feed(props: { chat: Array[ChatMsg]; setChatStateFn: any }) {
       <div className="content-center  space-y-2 divide-y-4">
         {props.chat.filter((m: ChatMsg) => m.role != "system").map((
           m: ChatMsg,
-        ) => <Msg msg={m} />)}
+          i: number,
+        ) => <Msg key={i} msg={m} />)}
       </div>
       <div ref={bottomRef} />
     </div>
@@ -142,6 +146,8 @@ function Controls(props: { setChatStateFn: any; chat: Array[ChatMsg] }) {
         }).then((res) => res.json())
           .then((res) => {
             props.setChatStateFn((curState) => [...curState, res]);
+            console.log("attempting to play result")
+            playMsg(res)
           });
       });
   }

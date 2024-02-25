@@ -28,7 +28,7 @@ class Conversation(BaseModel):
 
 
 @app.post("/get-text")
-def get_text(response: Response, audio: bytes = File()):
+def stt(audio: bytes = File()):
     with open("audio", "wb") as f:
         f.write(audio)
     # transcript = openAI_clinet.audio.transcriptions.create(
@@ -43,7 +43,7 @@ def get_text(response: Response, audio: bytes = File()):
 
 
 @app.post("/conversation")
-async def get_next_response(request: Request, response: Response):
+async def get_next_response(request: Request):
     # role = "test"
     # res_msg = "temp test response"
     messages = await request.json()
@@ -58,8 +58,8 @@ async def get_next_response(request: Request, response: Response):
     return {"role": role, "content": res_msg}
 
 
-@app.post("/speak", response_class=FileResponse)
-def tts(text: str, response: Response):
+@app.get("/speak", response_class=FileResponse)
+def tts(text: str):
     res = openAI_clinet.audio.speech.create(
         model="tts-1",
         voice="nova",
