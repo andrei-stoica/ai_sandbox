@@ -12,23 +12,22 @@ type ChatMsg = {
   content: string;
 };
 
-let audioBlobs = [];
+let audioBlobs: Array<Blob> = [];
 let streamBeingCaptured: MediaStream | null = null;
 let mediaRecorder: MediaRecorder | null = null;
-
 
 function get_mic() {
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     console.log("getUserMedia supported.");
     return navigator.mediaDevices.getUserMedia({ audio: true });
-  } else {
-    console.log("getUserMedia not supported on your browser!");
   }
+  throw "getUserMedia not supported on your browser!";
 }
 
 function startRecord() {
   audioBlobs = [];
   get_mic().then((stream) => {
+    console.log("got mic");
     streamBeingCaptured = stream;
     mediaRecorder = new MediaRecorder(stream);
     console.log("Starting Recording");
@@ -40,6 +39,12 @@ function startRecord() {
 }
 
 function stopRecord() {
+  if (!mediaRecorder) {
+    throw "MediaRecorder not set";
+  }
+  if (!streamBeingCaptured) {
+    throw "Stream not set";
+  }
   mediaRecorder.stop();
   streamBeingCaptured.getTracks()
     .forEach((track) => track.stop());
@@ -52,16 +57,18 @@ function stopRecord() {
 function playRecord() {
   const audioBlob = new Blob(audioBlobs, { type: "audio/webm" });
   const audioUrl = URL.createObjectURL(audioBlob);
-  const audio =  new Audio(audioUrl);
+  const audio = new Audio(audioUrl);
   audio.play();
 }
 
 function playMsg(msg: ChatMsg) {
-  const audio = new Audio("http://100.82.51.22:8001/speak?" + new URLSearchParams({text: msg.content}));
-  console.log("loading audio and playing?")
+  const audio = new Audio(
+    "http://100.82.51.22:8001/speak?" +
+    new URLSearchParams({ text: msg.content }),
+  );
+  console.log("loading audio and playing?");
   audio.play();
 }
-
 function Header() {
   return (
     <header className="header p-3">
@@ -72,11 +79,13 @@ function Header() {
   );
 }
 
-function Feed(props: { chat: Array[ChatMsg]; setChatStateFn: any }) {
-  const bottomRef = useRef(null);
+function Feed(props: { chat: Array<ChatMsg>; setChatStateFn: any }) {
+  const bottomRef = useRef<any>(null);
 
   const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -111,7 +120,7 @@ function Msg(props: { msg: ChatMsg }) {
   );
 }
 
-function Controls(props: { setChatStateFn: any; chat: Array[ChatMsg] }) {
+function Controls(props: { setChatStateFn: any, chat: Array<ChatMsg> }) {
   const [recordState, setRecordState] = useState(false);
 
   function toggleRecord() {
@@ -132,8 +141,7 @@ function Controls(props: { setChatStateFn: any; chat: Array[ChatMsg] }) {
       "body": formData,
     }).then((res) => res.json())
       .then((res) => {
-        console.log(res);
-        props.setChatStateFn((curState) => [
+        props.setChatStateFn((curState: Array<ChatMsg>) => [
           ...curState,
           { "role": "user", "content": res["user-transcript"] },
         ]);
@@ -145,9 +153,11 @@ function Controls(props: { setChatStateFn: any; chat: Array[ChatMsg] }) {
           }]),
         }).then((res) => res.json())
           .then((res) => {
-            props.setChatStateFn((curState) => [...curState, res]);
-            console.log("attempting to play result")
-            playMsg(res)
+            props.setChatStateFn((
+              curState: Array<ChatMsg>,
+            ) => [...curState, res]);
+            console.log("attempting to play result");
+            playMsg(res);
           });
       });
   }
