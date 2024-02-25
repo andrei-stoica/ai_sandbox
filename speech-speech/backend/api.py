@@ -3,12 +3,10 @@ from fastapi import FastAPI, File, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import whisper
 
 
 app = FastAPI()
 openAI_clinet = OpenAI()
-model = whisper.load_model("base")
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,16 +27,14 @@ class Conversation(BaseModel):
 
 @app.post("/get-text")
 def stt(audio: bytes = File()):
-    with open("audio", "wb") as f:
+    with open("audio.webm", "wb+") as f:
         f.write(audio)
-    # transcript = openAI_clinet.audio.transcriptions.create(
-    #    model="whisper-1",
-    #    file=audio,
-    #    response_format="text",
-    #    RequestBody
-    # )
-    result = model.transcribe("audio")
-    data = {"len": len(audio), "user-transcript": result["text"]}
+        transcript = openAI_clinet.audio.transcriptions.create(
+            model="whisper-1",
+            file=f,
+            response_format="text",
+         )
+    data = {"len": len(audio), "user-transcript": transcript}
     return data
 
 
@@ -58,13 +54,13 @@ async def get_next_response(request: Request):
     return {"role": role, "content": res_msg}
 
 
-@app.get("/speak", response_class=FileResponse)
+@app.get("/speak")
 def tts(text: str):
     res = openAI_clinet.audio.speech.create(
         model="tts-1",
         voice="nova",
         input=text,
+        response_format='mp3'
     )
     # this works for now but I need to find a way to stream this to response
-    res.stream_to_file("tts.mp3")
-    return "tts.mp3"
+    return Response(content=res.content, media_type="audio/mp3")
