@@ -1,16 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  TbBrandOpenai,
-  TbMicrophone2,
-  TbPlayerPlay,
-  TbPlayerStop,
-} from "react-icons/tb";
+import { useState } from "react";
+import { ChatMsg, Controls, Feed, Header } from "./components.tsx";
 import "./App.css";
-
-type ChatMsg = {
-  role: string;
-  content: string;
-};
 
 let audioBlobs: Array<Blob> = [];
 let streamBeingCaptured: MediaStream | null = null;
@@ -69,59 +59,12 @@ function playMsg(msg: ChatMsg) {
   console.log("loading audio and playing?");
   audio.play();
 }
-function Header() {
-  return (
-    <header className="header p-3">
-      <div className="title text-5xl font-extrabold">
-        Speach to Speech AI example
-      </div>
-    </header>
-  );
-}
-
-function Feed(props: { chat: Array<ChatMsg>; setChatStateFn: any }) {
-  const bottomRef = useRef<any>(null);
-
-  const scrollToBottom = () => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-    console.log("scroll?");
-  });
-
-  return (
-    <div className="feed grow self-center w-5/6 max-w-screen-lg px-6 py-3 overflow-scroll">
-      <div className="content-center  space-y-2 divide-y-4">
-        {props.chat.filter((m: ChatMsg) => m.role != "system").map((
-          m: ChatMsg,
-          i: number,
-        ) => <Msg key={i} msg={m} />)}
-      </div>
-      <div ref={bottomRef} />
-    </div>
-  );
-}
-
-function Msg(props: { msg: ChatMsg }) {
-  return (
-    <div className="Messege text-lg">
-      <span className="font-bold">
-        {props.msg.role.toUpperCase()}:
-      </span>
-      <br />
-      <span className="ml-8">
-        {props.msg.content}
-      </span>
-    </div>
-  );
-}
-
-function Controls(props: { setChatStateFn: any, chat: Array<ChatMsg> }) {
+function App() {
   const [recordState, setRecordState] = useState(false);
+  const [chatState, setChatState] = useState([{
+    role: "system",
+    content: "You are a helpful assistant.",
+  }]);
 
   function toggleRecord() {
     if (recordState == false) {
@@ -141,19 +84,19 @@ function Controls(props: { setChatStateFn: any, chat: Array<ChatMsg> }) {
       "body": formData,
     }).then((res) => res.json())
       .then((res) => {
-        props.setChatStateFn((curState: Array<ChatMsg>) => [
+        setChatState((curState: Array<ChatMsg>) => [
           ...curState,
           { "role": "user", "content": res["user-transcript"] },
         ]);
         fetch("http://100.82.51.22:8001/conversation", {
           "method": "POST",
-          "body": JSON.stringify([...props.chat, {
+          "body": JSON.stringify([...chatState, {
             "role": "user",
             "content": res["user-transcript"],
           }]),
         }).then((res) => res.json())
           .then((res) => {
-            props.setChatStateFn((
+            setChatState((
               curState: Array<ChatMsg>,
             ) => [...curState, res]);
             console.log("attempting to play result");
@@ -163,41 +106,6 @@ function Controls(props: { setChatStateFn: any, chat: Array<ChatMsg> }) {
   }
 
   return (
-    <div className="controls self-center flex justify-evenly p-5 text-5xl border-2 border-b-0 w-1/2 max-w-screen-sm min-w-fit">
-      <button
-        onClick={() => toggleRecord()}
-        className={"inline-flex " + (recordState ? "text-red-500" : "")}
-      >
-        {recordState ? <TbPlayerStop /> : <TbMicrophone2 />}
-        {recordState ? "STOP" : "REC"}
-      </button>
-
-      <button
-        onClick={() => playRecord()}
-        className="inline-flex text-green-500"
-      >
-        <TbPlayerPlay /> PLAY
-      </button>
-
-      <button
-        onClick={() => {
-          sendAudio();
-        }}
-        className="inline-flex"
-      >
-        <TbBrandOpenai /> SEND
-      </button>
-    </div>
-  );
-}
-
-function App() {
-  const [chatState, setChatState] = useState([{
-    role: "system",
-    content: "You are a helpful assistant.",
-  }]);
-
-  return (
     <>
       <div className="h-screen center flex flex-col">
         <div className="w-full max-w-screen-xl self-center">
@@ -205,7 +113,12 @@ function App() {
           <hr className="mx-3 border-t-4" />
         </div>
         <Feed chat={chatState} setChatStateFn={setChatState} />
-        <Controls setChatStateFn={setChatState} chat={chatState} />
+        <Controls
+          recButtonOnClick={toggleRecord}
+          recordState={recordState}
+          playButtonOnClick={playRecord}
+          sendButtonOnClick={sendAudio}
+        />
       </div>
     </>
   );
