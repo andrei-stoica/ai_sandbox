@@ -9,4 +9,7 @@ export default defineConfig({
       "Access-Control-Allow-Origin": '*',
     },
   },
+	build: {
+		outDir: '../backend/dist/',
+	},
 });

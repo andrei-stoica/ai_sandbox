@@ -1,5 +1,6 @@
 from openai import OpenAI
 from fastapi import FastAPI, File, Response, Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from io import BytesIO
@@ -58,3 +59,8 @@ def tts(text: str):
         model="tts-1", voice="nova", input=text, response_format="mp3"
     )
     return Response(content=res.content, media_type="audio/mp3")
+
+
+# if this is above other routes it will try and serve files instead of matching
+# the intended route
+app.mount("/", StaticFiles(directory="dist", html=True), name="static")
