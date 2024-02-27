@@ -53,7 +53,7 @@ function playRecord() {
 
 function playMsg(msg: ChatMsg) {
   const audio = new Audio(
-    "http://100.82.51.22:8001/speak?" +
+    "/speak?" +
     new URLSearchParams({ text: msg.content }),
   );
   console.log("loading audio and playing?");
@@ -79,7 +79,7 @@ function App() {
   function sendAudio() {
     var formData = new FormData();
     formData.append("audio", new Blob(audioBlobs, { type: "audio/webm" }));
-    fetch("http://100.82.51.22:8001/get-text", {
+    fetch("/get-text", {
       "method": "POST",
       "body": formData,
     }).then((res) => res.json())
@@ -88,7 +88,7 @@ function App() {
           ...curState,
           { "role": "user", "content": res["user-transcript"] },
         ]);
-        fetch("http://100.82.51.22:8001/conversation", {
+        fetch("/conversation", {
           "method": "POST",
           "body": JSON.stringify([...chatState, {
             "role": "user",
