@@ -4,7 +4,7 @@ A learning arena to learn about the current AI tool landscape
 
 ## Subprojects
 
-### [Speach to Speach AI Assistant]
+### [Speech to Speech AI Assistant](./speech-speech/)
 AI assistant chat with speech recognition and tts responses
 
 Fullstack  
