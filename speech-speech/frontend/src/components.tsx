@@ -50,23 +50,6 @@ export function Feed(props: { chat: Array<ChatMsg>; setChatStateFn: any }) {
 }
 
 export function Msg(props: { msg: ChatMsg }) {
-  //let audio;
-  //if (props.msg.role == "assistant") {
-  //  audio = (
-  //    <audio
-  //      controls
-  //      autoPlay
-  //      src={"/speak?" + new URLSearchParams({ text: props.msg.content })}
-  //    />
-  //  );
-  //} else if (props.msg.audio) {
-  //  audio = (
-  //    <audio
-  //      controls
-  //      src={props.msg.audio}
-  //    />
-  //  );
-  //}
   return (
     <div className="Messege text-lg">
       <span className="font-bold">
