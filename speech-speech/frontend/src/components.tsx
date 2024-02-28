@@ -9,7 +9,7 @@ import {
 export type ChatMsg = {
   role: string;
   content: string;
-  audio: any = null;
+  audio?: string;
 };
 
 export function Header() {
@@ -50,18 +50,23 @@ export function Feed(props: { chat: Array<ChatMsg>; setChatStateFn: any }) {
 }
 
 export function Msg(props: { msg: ChatMsg }) {
-  let audio;
-  if (props.msg.role == "assistant") {
-    audio = (
-      <audio
-        controls
-        autoPlay
-        src={"/speak?" + new URLSearchParams({ text: props.msg.content })}
-      />
-    );
-  } else if (props.msg.audio){
-    <div />;
-  }
+  //let audio;
+  //if (props.msg.role == "assistant") {
+  //  audio = (
+  //    <audio
+  //      controls
+  //      autoPlay
+  //      src={"/speak?" + new URLSearchParams({ text: props.msg.content })}
+  //    />
+  //  );
+  //} else if (props.msg.audio) {
+  //  audio = (
+  //    <audio
+  //      controls
+  //      src={props.msg.audio}
+  //    />
+  //  );
+  //}
   return (
     <div className="Messege text-lg">
       <span className="font-bold">
@@ -71,7 +76,11 @@ export function Msg(props: { msg: ChatMsg }) {
       <span className="ml-8">
         {props.msg.content}
       </span>
-      {audio}
+      <audio
+        controls
+        autoPlay={props.msg.role == "assistant"}
+        src={props.msg.audio}
+      />
     </div>
   );
 }

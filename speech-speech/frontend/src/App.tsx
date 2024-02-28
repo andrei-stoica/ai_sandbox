@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChatMsg, Controls, Feed, Header } from "./components.tsx";
 import "./App.css";
 
+let userAudio: Array<Blob> = [];
 let audioBlobs: Array<Blob> = [];
 let streamBeingCaptured: MediaStream | null = null;
 let mediaRecorder: MediaRecorder | null = null;
@@ -51,15 +52,6 @@ function playRecord() {
   audio.play();
 }
 
-//function playMsg(msg: ChatMsg) {
-//  const audio = new Audio(
-//    "/speak?" +
-//    new URLSearchParams({ text: msg.content }),
-//  );
-//  console.log("loading audio and playing?");
-//  audio.play();
-//}
-
 function App() {
   const [recordState, setRecordState] = useState(false);
   const [chatState, setChatState] = useState([{
@@ -78,8 +70,10 @@ function App() {
   }
 
   function sendAudio() {
-    var formData = new FormData();
-    formData.append("audio", new Blob(audioBlobs, { type: "audio/webm" }));
+    let formData = new FormData();
+    let audio = new Blob(audioBlobs, { type: "audio/webm" });
+    userAudio.push(audio);
+    formData.append("audio", audio);
     fetch("/get-text", {
       "method": "POST",
       "body": formData,
@@ -87,7 +81,11 @@ function App() {
       .then((res) => {
         setChatState((curState: Array<ChatMsg>) => [
           ...curState,
-          { "role": "user", "content": res["user-transcript"] },
+          {
+            "role": "user",
+            "content": res["user-transcript"],
+            "audio": URL.createObjectURL(userAudio[userAudio.length - 1]),
+          },
         ]);
         fetch("/conversation", {
           "method": "POST",
@@ -99,9 +97,10 @@ function App() {
           .then((res) => {
             setChatState((
               curState: Array<ChatMsg>,
-            ) => [...curState, res]);
-           // console.log("attempting to play result");
-            //playMsg(res);
+            ) => [...curState, {
+              ...res,
+              "audio": "/speak?" + new URLSearchParams({ text: res.content }),
+            }]);
           });
       });
   }
