@@ -51,14 +51,15 @@ function playRecord() {
   audio.play();
 }
 
-function playMsg(msg: ChatMsg) {
-  const audio = new Audio(
-    "/speak?" +
-    new URLSearchParams({ text: msg.content }),
-  );
-  console.log("loading audio and playing?");
-  audio.play();
-}
+//function playMsg(msg: ChatMsg) {
+//  const audio = new Audio(
+//    "/speak?" +
+//    new URLSearchParams({ text: msg.content }),
+//  );
+//  console.log("loading audio and playing?");
+//  audio.play();
+//}
+
 function App() {
   const [recordState, setRecordState] = useState(false);
   const [chatState, setChatState] = useState([{
@@ -99,8 +100,8 @@ function App() {
             setChatState((
               curState: Array<ChatMsg>,
             ) => [...curState, res]);
-            console.log("attempting to play result");
-            playMsg(res);
+           // console.log("attempting to play result");
+            //playMsg(res);
           });
       });
   }
